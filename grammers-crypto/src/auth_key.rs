@@ -5,46 +5,39 @@
 // <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
-use crate::sha1;
+
 use std::fmt;
 
 /// Telegram's [Authorization Key](https://core.telegram.org/mtproto/auth_key).
 ///
 /// This library does not provide the means to generate a valid key,
 /// because doing so relies on (de-)serializing Telegram types.
-#[derive(Clone)]
+#[derive(Clone, Eq)]
 pub struct AuthKey {
     pub(crate) data: [u8; 256],
+
     pub(crate) aux_hash: [u8; 8],
-    pub(crate) key_id: [u8; 8],
+    pub(crate) id: [u8; 8],
 }
 
 impl PartialEq for AuthKey {
     fn eq(&self, other: &Self) -> bool {
-        self.key_id == other.key_id
+        self.id == other.id
     }
 }
 
 impl AuthKey {
-    /// Creates a new authorization key from the given binary data.
+    /// Creates a new authorization key.
     pub fn from_bytes(data: [u8; 256]) -> Self {
-        let sha = sha1!(&data);
-        let aux_hash = {
-            let mut buffer = [0; 8];
-            buffer.copy_from_slice(&sha[0..8]);
-            buffer
-        };
-        let key_id = {
-            let mut buffer = [0; 8];
-            buffer.copy_from_slice(&sha[12..12 + 8]);
-            buffer
-        };
+        let sha1 = crate::sha1!(&data);
 
-        Self {
-            data,
-            aux_hash,
-            key_id,
-        }
+        let mut aux_hash = [0; 8];
+        aux_hash.copy_from_slice(&sha1[0..8]);
+
+        let mut id = [0; 8];
+        id.copy_from_slice(&sha1[12..12 + 8]);
+
+        Self { data, aux_hash, id }
     }
 
     /// Returns a shared reference to the underlying data.
@@ -57,6 +50,12 @@ impl AuthKey {
         self.data
     }
 
+    /// The 64 lower-order bits of the SHA1 hash of the authorization key.
+    /// https://core.telegram.org/mtproto/description#key-identifier-auth-key-id
+    pub fn id(&self) -> &[u8; 8] {
+        &self.id
+    }
+
     /// Calculates the new nonce hash based on the current attributes.
     pub fn calc_new_nonce_hash(&self, new_nonce: &[u8; 32], number: u8) -> [u8; 16] {
         let mut buffer = [0; 32 + 1 + 8];
@@ -65,14 +64,16 @@ impl AuthKey {
         buffer[32] = number;
         buffer[33..].copy_from_slice(&self.aux_hash);
 
-        sha1!(buffer)[4..].try_into().unwrap()
+        crate::sha1!(buffer)[4..].try_into().unwrap()
     }
 }
 
 impl fmt::Debug for AuthKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let id = u64::from_le_bytes(self.id);
+
         f.debug_struct("AuthKey")
-            .field("key_id", &u64::from_le_bytes(self.key_id))
+            .field("id", &format_args!("0x{:016x}", id))
             .finish()
     }
 }
@@ -114,7 +115,7 @@ mod tests {
         let auth_key = get_test_auth_key();
         let expected = [50, 209, 88, 110, 164, 87, 223, 200];
 
-        assert_eq!(auth_key.key_id, expected);
+        assert_eq!(auth_key.id, expected);
     }
 
     #[test]

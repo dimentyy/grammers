@@ -138,7 +138,7 @@ fn do_encrypt_data_v2(buffer: &mut DequeBuffer<u8>, auth_key: &AuthKey, random_p
     aes::ige_encrypt(&mut buffer[..], &key, &iv);
 
     buffer.extend_front(&msg_key);
-    buffer.extend_front(&auth_key.key_id);
+    buffer.extend_front(&auth_key.id);
 }
 
 /// This function implements the [MTProto 2.0 algorithm] for computing
@@ -171,7 +171,7 @@ pub fn decrypt_data_v2<'b>(
 
     // TODO Check salt, session_id and sequence_number
     let key_id = &buffer[..8];
-    if auth_key.key_id != *key_id {
+    if auth_key.id != key_id {
         return Err(Error::AuthKeyMismatch);
     }
 
