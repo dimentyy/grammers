@@ -19,33 +19,30 @@ pub fn to_hex(bytes: &[u8]) -> String {
     result
 }
 
-/// Convert an hexadecimal string into a sequence of bytes.
-pub fn opt_from_hex(hex: &str) -> Option<Vec<u8>> {
-    fn hex_to_decimal(hex_digit: u8) -> Option<u8> {
-        Some(match hex_digit {
-            b'0'..=b'9' => hex_digit - b'0',
-            b'a'..=b'f' => hex_digit - b'a' + 0xa,
-            b'A'..=b'F' => hex_digit - b'A' + 0xa,
-            _ => return None,
-        })
+/// Convert a hexadecimal string into a byte array.
+/// For use in constants. Panics on invalid data.
+pub const fn into_bytes<const N: usize>(s: &str) -> [u8; N] {
+    const fn nibble(nibble: u8) -> u8 {
+        match nibble {
+            b'0'..=b'9' => nibble - b'0',
+            b'a'..=b'f' => nibble - b'a' + 10,
+            b'A'..=b'F' => nibble - b'A' + 10,
+            _ => panic!("invalid hex data")
+        }
     }
 
-    if hex.len() % 2 != 0 {
-        return None;
+    if s.len() % 2 != 0 {
+        panic!("invalid hex data: odd string length");
     }
 
-    hex.as_bytes()
-        .chunks_exact(2)
-        .map(
-            |slice| match (hex_to_decimal(slice[0]), hex_to_decimal(slice[1])) {
-                (Some(h), Some(l)) => Some(h * 0x10 + l),
-                _ => None,
-            },
-        )
-        .collect()
-}
+    let mut arr = [0; N];
 
-/// Like `opt_from_hex`, but panics on invalid data.
-pub fn from_hex(hex: &str) -> Vec<u8> {
-    opt_from_hex(hex).unwrap()
+    let mut i = 0;
+    while i < arr.len() / 2 {
+        arr[i] = nibble(s.as_bytes()[i * 2]) << 4 + nibble(s.as_bytes()[i * 2 + 1]);
+
+        i += 1;
+    }
+
+    arr
 }
