@@ -8,7 +8,7 @@
 
 use crate::errors::{InvocationError, ReadError, RpcError};
 use crate::net::{NetStream, ServerAddr};
-use grammers_crypto::DequeBuffer;
+use grammers_crypto::{AuthKey, DequeBuffer};
 use grammers_mtproto::mtp::{
     self, BadMessage, Deserialization, DeserializationFailure, Mtp, RpcResult, RpcResultError,
 };
@@ -573,7 +573,7 @@ impl<T: Transport, M: Mtp> Sender<T, M> {
 }
 
 impl<T: Transport> Sender<T, mtp::Encrypted> {
-    pub fn auth_key(&self) -> [u8; 256] {
+    pub fn auth_key(&self) -> &AuthKey {
         self.mtp.auth_key()
     }
 }

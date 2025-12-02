@@ -159,9 +159,9 @@ impl Encrypted {
         }
     }
 
-    /// The Authorization Key used for encryption and decryption.
-    pub fn auth_key(&self) -> [u8; 256] {
-        self.auth_key.to_bytes()
+    /// The [`AuthKey`] used for encryption and decryption.
+    pub fn auth_key(&self) -> &AuthKey {
+        &self.auth_key
     }
 
     /// Correct our time offset based on a known valid message ID.

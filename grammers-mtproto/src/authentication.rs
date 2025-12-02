@@ -634,7 +634,7 @@ pub fn create_key(
     };
 
     if TRACE_AUTH_GEN {
-        println!("a {}", hex::to_hex(&auth_key.to_bytes()));
+        println!("a {}", hex::to_hex(auth_key.as_bytes()));
         println!("o {time_offset}");
         println!("s {first_salt}");
     }
@@ -642,7 +642,7 @@ pub fn create_key(
     // 1 for DhGenOk
     if dh_gen.nonce_number == 1 {
         Ok(Finished {
-            auth_key: auth_key.to_bytes(),
+            auth_key: *auth_key.as_bytes(),
             time_offset,
             first_salt,
         })

@@ -47,9 +47,13 @@ impl AuthKey {
         }
     }
 
-    /// Converts the authorization key to a sequence of bytes, which can
-    /// be loaded back later.
-    pub fn to_bytes(&self) -> [u8; 256] {
+    /// Returns a shared reference to the underlying data.
+    pub fn as_bytes(&self) -> &[u8; 256] {
+        &self.data
+    }
+
+    /// Consumes the `AuthKey`, returning underlying data.
+    pub fn into_bytes(self) -> [u8; 256] {
         self.data
     }
 

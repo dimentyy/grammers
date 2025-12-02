@@ -221,7 +221,7 @@ impl SenderPoolRunner {
                             }
                         };
 
-                        dc_option.auth_key = Some(sender.auth_key());
+                        dc_option.auth_key = Some(*sender.auth_key().as_bytes());
                         self.session.set_dc_option(&dc_option);
 
                         let (rpc_tx, rpc_rx) = mpsc::unbounded_channel();
