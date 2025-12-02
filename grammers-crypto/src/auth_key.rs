@@ -55,17 +55,13 @@ impl AuthKey {
 
     /// Calculates the new nonce hash based on the current attributes.
     pub fn calc_new_nonce_hash(&self, new_nonce: &[u8; 32], number: u8) -> [u8; 16] {
-        let data = {
-            let mut buffer = Vec::with_capacity(new_nonce.len() + 1 + self.aux_hash.len());
-            buffer.extend(new_nonce);
-            buffer.push(number);
-            buffer.extend(&self.aux_hash);
-            buffer
-        };
+        let mut buffer = [0; 32 + 1 + 8];
 
-        let mut result = [0u8; 16];
-        result.copy_from_slice(&sha1!(data)[4..]);
-        result
+        buffer[..32].copy_from_slice(new_nonce);
+        buffer[32] = number;
+        buffer[33..].copy_from_slice(&self.aux_hash);
+
+        sha1!(buffer)[4..].try_into().unwrap()
     }
 }
 
