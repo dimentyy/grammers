@@ -75,11 +75,9 @@ impl Transport for Full {
         let len = i32::from_le_bytes(buffer[0..4].try_into().unwrap());
         if len < 12 {
             if len < 0 {
-                return Err(Error::BadStatus {
-                    status: (-len) as u32,
-                });
+                return Err(Error::Status(-len));
             }
-            return Err(Error::BadLen { got: len });
+            return Err(Error::BadLen(len));
         }
 
         if total_len < len {
@@ -91,7 +89,7 @@ impl Transport for Full {
         if seq != self.recv_seq {
             return Err(Error::BadSeq {
                 expected: self.recv_seq,
-                got: seq,
+                received: seq,
             });
         }
 
@@ -107,8 +105,8 @@ impl Transport for Full {
         };
         if crc != valid_crc {
             return Err(Error::BadCrc {
-                expected: valid_crc,
-                got: crc,
+                computed: valid_crc,
+                received: crc,
             });
         }
 
@@ -227,7 +225,7 @@ mod tests {
             transport.unpack(&mut buffer[..]),
             Err(Error::BadSeq {
                 expected: 0,
-                got: 1,
+                received: 1,
             })
         );
     }
@@ -242,8 +240,8 @@ mod tests {
         assert_eq!(
             transport.unpack(&mut buffer[..]),
             Err(Error::BadCrc {
-                expected: 932541318,
-                got: 3365237638,
+                computed: 932541318,
+                received: 3365237638,
             })
         );
     }
@@ -256,7 +254,7 @@ mod tests {
 
         assert_eq!(
             transport.unpack(&mut buffer[..]),
-            Err(Error::BadStatus { status: 404 })
+            Err(Error::Status(404))
         );
     }
 }

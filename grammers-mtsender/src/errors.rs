@@ -211,7 +211,7 @@ pub enum InvocationError {
 
     /// Error propagated from the underlying [`transport`].
     ///
-    /// The most common variant is [`transport::Error::BadStatus`], which can occur when
+    /// The most common variant is [`transport::Error::Status`], which can occur when
     /// there's no valid Authorization Key (404) or too many connections have been made (429).
     Transport(transport::Error),
 

@@ -65,11 +65,9 @@ impl Transport for Intermediate {
         if len <= 4 {
             if len >= 4 {
                 let data = i32::from_le_bytes(buffer[4..8].try_into().unwrap());
-                return Err(Error::BadStatus {
-                    status: (-data) as u32,
-                });
+                return Err(Error::Status(-data));
             }
-            return Err(Error::BadLen { got: len });
+            return Err(Error::BadLen(len));
         }
 
         let len = len as usize;
@@ -172,7 +170,7 @@ mod tests {
 
         assert_eq!(
             transport.unpack(&mut buffer[..]),
-            Err(Error::BadStatus { status: 404 })
+            Err(Error::Status(404))
         );
     }
 }

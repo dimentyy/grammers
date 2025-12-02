@@ -305,7 +305,7 @@ impl SenderPoolRunner {
 
         let enums::Config::Config(remote_config) = match sender.invoke(&init_connection).await {
             Ok(config) => config,
-            Err(InvocationError::Transport(transport::Error::BadStatus { status: 404 })) => {
+            Err(InvocationError::Transport(transport::Error::Status(404))) => {
                 sender = connect(transport(), addr()).await?;
                 sender.invoke(&init_connection).await?
             }

@@ -11,13 +11,13 @@ pub enum Error {
     MissingBytes,
 
     /// The length is either too short or too long to represent a valid packet.
-    BadLen { got: i32 },
+    BadLen(i32),
 
     /// The sequence number received does not match the expected value.
-    BadSeq { expected: i32, got: i32 },
+    BadSeq { expected: i32, received: i32 },
 
     /// The checksum of the packet does not match its expected value.
-    BadCrc { expected: u32, got: u32 },
+    BadCrc { computed: u32, received: u32 },
 
     /// A negative length was received, indicating a [transport-level error].
     /// The absolute value of this length behaves like an [HTTP status code]:
@@ -31,25 +31,32 @@ pub enum Error {
     ///
     /// [transport-level error]: https://core.telegram.org/mtproto/mtproto-transports#transport-errors
     /// [HTTP status code]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-    BadStatus { status: u32 },
+    Status(i32),
 }
 
 impl std::error::Error for Error {}
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "transport error: ")?;
+        use Error::*;
+
+        f.write_str("transport error: ")?;
+
         match self {
-            Error::MissingBytes => write!(f, "need more bytes"),
-            Error::BadLen { got } => write!(f, "bad len (got {got})"),
-            Error::BadSeq { expected, got } => {
-                write!(f, "bad seq (expected {expected}, got {got})")
+            MissingBytes => todo!("being removed"),
+
+            BadLen(len) => write!(f, "bad len: {len}"),
+            BadSeq { received, expected } => {
+                write!(f, "bad seq: expected {expected}, received {received}")
             }
-            Error::BadCrc { expected, got } => {
-                write!(f, "bad crc (expected {expected}, got {got})")
+            BadCrc { computed, received } => {
+                write!(
+                    f,
+                    "bad crc: computed {computed:08x}, received {received:08x}"
+                )
             }
-            Error::BadStatus { status } => {
-                write!(f, "bad status (negative length -{status})")
+            Status(status) => {
+                write!(f, "status code (negative len): {status}")
             }
         }
     }

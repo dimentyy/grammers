@@ -91,9 +91,7 @@ impl Transport for Abridged {
         if header_len == 1 && len >= 4 {
             let data = i32::from_le_bytes(buffer[1..5].try_into().unwrap());
             if data < 0 {
-                return Err(Error::BadStatus {
-                    status: (-data) as u32,
-                });
+                return Err(Error::Status(-data));
             }
         }
 
@@ -217,7 +215,7 @@ mod tests {
 
         assert_eq!(
             transport.unpack(&mut buffer[..]),
-            Err(Error::BadStatus { status: 404 })
+            Err(Error::Status(404))
         );
     }
 }
