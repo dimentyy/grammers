@@ -633,7 +633,7 @@ pub async fn generate_auth_key<T: Transport>(
 pub async fn connect_with_auth<T: Transport>(
     transport: T,
     addr: ServerAddr,
-    auth_key: [u8; 256],
+    auth_key: AuthKey,
 ) -> Result<Sender<T, mtp::Encrypted>, io::Error> {
     Sender::connect(transport, mtp::Encrypted::build().finish(auth_key), addr).await
 }

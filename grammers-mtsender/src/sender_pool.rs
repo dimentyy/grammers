@@ -9,6 +9,7 @@
 use crate::configuration::ConnectionParams;
 use crate::errors::ReadError;
 use crate::{InvocationError, Sender, ServerAddr, connect, connect_with_auth};
+use grammers_crypto::AuthKey;
 use grammers_mtproto::{mtp, transport};
 use grammers_session::Session;
 use grammers_session::types::DcOption;
@@ -297,7 +298,7 @@ impl SenderPoolRunner {
         };
 
         let mut sender = if let Some(auth_key) = dc_option.auth_key {
-            connect_with_auth(transport(), addr(), auth_key).await?
+            connect_with_auth(transport(), addr(), AuthKey::from_bytes(auth_key)).await?
         } else {
             connect(transport(), addr()).await?
         };

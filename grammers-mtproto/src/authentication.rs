@@ -558,7 +558,7 @@ fn do_step3(
 /// [`create_key`]: fn.create_key.html
 #[derive(Clone, Debug, PartialEq)]
 pub struct Finished {
-    pub auth_key: [u8; 256],
+    pub auth_key: AuthKey,
     pub time_offset: i32,
     pub first_salt: i64,
 }
@@ -642,7 +642,7 @@ pub fn create_key(
     // 1 for DhGenOk
     if dh_gen.nonce_number == 1 {
         Ok(Finished {
-            auth_key: *auth_key.as_bytes(),
+            auth_key,
             time_offset,
             first_salt,
         })
@@ -744,7 +744,7 @@ mod tests {
         let step3_response = hex::from_hex(
             "34f7cb3b4e44b426241e8b839153122d44585ac665ba0b393e1094329eda2c42d628330313b781a0de4ab6bc7ab414cbe13f9f86",
         );
-        let expected_auth_key = hex::from_hex("7582e48ad36cd6eef7944ac9bd7027de9ee3202543b68850ac01e1221350f7174e6c3771c9d86b3075f777539c23d053e9da9a1510d49e8fa0ad76a016ce28bfe3543dde69959bc682dab762b95a36629a8438e65baa53cc79b551c23d555c7675a36f4ece90882ece497d28a903409b780a8a80516cb0f8534fee3a67530beb2b1929626e07c2a052c4870b18b0a626606ca05cb13668a65aee3fa32cbebf1b3a56532138cb22c017cac44a292021902eea9b9f906c6be19c9203c7bb3ebc5f1b2044d0a90cb008f7248c3ae4449e0895b6090abb04c24131c2948bd27d879ecb934e50a46671f987653385ab388e4fa1ddd4c95743111e08bf11fef1f8f739").as_slice().try_into().unwrap();
+        let expected_auth_key = AuthKey::from_bytes(hex::from_hex("7582e48ad36cd6eef7944ac9bd7027de9ee3202543b68850ac01e1221350f7174e6c3771c9d86b3075f777539c23d053e9da9a1510d49e8fa0ad76a016ce28bfe3543dde69959bc682dab762b95a36629a8438e65baa53cc79b551c23d555c7675a36f4ece90882ece497d28a903409b780a8a80516cb0f8534fee3a67530beb2b1929626e07c2a052c4870b18b0a626606ca05cb13668a65aee3fa32cbebf1b3a56532138cb22c017cac44a292021902eea9b9f906c6be19c9203c7bb3ebc5f1b2044d0a90cb008f7248c3ae4449e0895b6090abb04c24131c2948bd27d879ecb934e50a46671f987653385ab388e4fa1ddd4c95743111e08bf11fef1f8f739").as_slice().try_into().unwrap());
         let expected_time_offset = 0;
         let expected_first_salt = 4459407212920268508;
 
