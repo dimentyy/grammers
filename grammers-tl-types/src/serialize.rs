@@ -13,6 +13,8 @@
 ///
 /// [Binary Data Serialization]: https://core.telegram.org/mtproto/serialize
 pub trait Serializable {
+    fn serialized_len(&self) -> usize;
+
     /// Serializes the instance into the given buffer.
     fn serialize(&self, buf: &mut impl Extend<u8>);
 
@@ -20,13 +22,18 @@ pub trait Serializable {
     /// and return its bytes. It is more efficient to reuse a existing
     /// buffer with [`Serializable::serialize`].
     fn to_bytes(&self) -> Vec<u8> {
-        let mut buffer = Vec::new();
-        self.serialize(&mut buffer);
-        buffer
+        let mut buf = vec![0; self.serialized_len()];
+        self.serialize(&mut buf);
+        buf
     }
 }
 
 impl Serializable for bool {
+    #[inline(always)]
+    fn serialized_len(&self) -> usize {
+        4
+    }
+
     /// Serializes the boolean according to the following definitions:
     ///
     /// * `false` is serialized as `boolFalse#bc799737 = Bool;`.
@@ -47,6 +54,11 @@ impl Serializable for bool {
 }
 
 impl Serializable for i32 {
+    #[inline(always)]
+    fn serialized_len(&self) -> usize {
+        4
+    }
+
     /// Serializes the 32-bit signed integer according to the following
     /// definition:
     ///
@@ -69,6 +81,11 @@ impl Serializable for i32 {
 }
 
 impl Serializable for u32 {
+    #[inline(always)]
+    fn serialized_len(&self) -> usize {
+        4
+    }
+
     /// Serializes the 32-bit unsigned integer according to the following
     /// definition:
     ///
@@ -90,6 +107,11 @@ impl Serializable for u32 {
 }
 
 impl Serializable for i64 {
+    #[inline(always)]
+    fn serialized_len(&self) -> usize {
+        8
+    }
+
     /// Serializes the 64-bit signed integer according to the following
     /// definition:
     ///
@@ -112,6 +134,11 @@ impl Serializable for i64 {
 }
 
 impl Serializable for [u8; 16] {
+    #[inline(always)]
+    fn serialized_len(&self) -> usize {
+        16
+    }
+
     /// Serializes the 128-bit integer according to the following definition:
     ///
     /// * `int128 4*[ int ] = Int128;`.
@@ -131,6 +158,11 @@ impl Serializable for [u8; 16] {
 }
 
 impl Serializable for [u8; 32] {
+    #[inline(always)]
+    fn serialized_len(&self) -> usize {
+        32
+    }
+
     /// Serializes the 128-bit integer according to the following definition:
     ///
     /// * `int256 8*[ int ] = Int256;`.
@@ -151,6 +183,11 @@ impl Serializable for [u8; 32] {
 }
 
 impl Serializable for f64 {
+    #[inline(always)]
+    fn serialized_len(&self) -> usize {
+        8
+    }
+
     /// Serializes the 64-bit floating point according to the following
     /// definition:
     ///
@@ -174,6 +211,10 @@ impl Serializable for f64 {
 }
 
 impl<T: Serializable> Serializable for Vec<T> {
+    fn serialized_len(&self) -> usize {
+        4 + self.iter().map(Serializable::serialized_len).sum::<usize>()
+    }
+
     /// Serializes a vector of serializable items according to the following
     /// definition:
     ///
@@ -197,6 +238,10 @@ impl<T: Serializable> Serializable for Vec<T> {
 }
 
 impl<T: Serializable> Serializable for crate::RawVec<T> {
+    fn serialized_len(&self) -> usize {
+        self.0.iter().map(Serializable::serialized_len).sum()
+    }
+
     /// Serializes a raw vector of serializable items according to the following
     /// definition:
     ///
@@ -217,6 +262,11 @@ impl<T: Serializable> Serializable for crate::RawVec<T> {
 }
 
 impl Serializable for String {
+    #[inline(always)]
+    fn serialized_len(&self) -> usize {
+        self.as_bytes().serialized_len()
+    }
+
     /// Serializes a UTF-8 string according to the following definition:
     ///
     /// * `string ? = String;`.
@@ -259,6 +309,11 @@ impl Serializable for String {
 }
 
 impl Serializable for Vec<u8> {
+    #[inline(always)]
+    fn serialized_len(&self) -> usize {
+        self.as_slice().serialized_len()
+    }
+
     /// Serializes a vector of bytes as a byte-string according to the following
     /// definition:
     ///
@@ -278,6 +333,15 @@ impl Serializable for Vec<u8> {
 }
 
 impl Serializable for &[u8] {
+    #[inline(always)]
+    fn serialized_len(&self) -> usize {
+        if self.len() <= 253 {
+            (self.len() + 4) & !3
+        } else {
+            (self.len() + 7) & !3
+        }
+    }
+
     /// Serializes a byte-string according to the following definition:
     ///
     /// * `string ? = String;`.

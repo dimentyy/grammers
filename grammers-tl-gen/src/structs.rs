@@ -12,7 +12,7 @@ use crate::grouper;
 use crate::metadata::Metadata;
 use crate::rustifier;
 use crate::{Config, ignore_type};
-use grammers_tl_parser::tl::{Category, Definition, ParameterType};
+use grammers_tl_parser::tl::{Category, Definition, Parameter, ParameterType};
 use std::io::{self, Write};
 
 /// Get the list of generic parameters:
@@ -172,10 +172,32 @@ fn write_serializable<W: Write>(
         rustifier::definitions::type_name(def),
         get_generic_param_list(def, ""),
     )?;
+
+    writeln!(file, "{indent}    fn serialized_len(&self) -> usize {{")?;
+
+    match def.category {
+        Category::Types if def.params.is_empty() => {
+            writeln!(file, "{indent}        0")?;
+        }
+        Category::Types => {
+            write_serialized_len_param(file, indent, &def.params[0], _metadata, true)?;
+
+            for param in def.params[1..].iter() {
+                write_serialized_len_param(file, indent, param, _metadata, false)?;
+            }
+        }
+        Category::Functions => {
+            writeln!(file, "{indent}        4 // CONSTRUCTOR_ID")?;
+
+            for param in def.params.iter() {
+                write_serialized_len_param(file, indent, param, _metadata, false)?;
+            }
+        }
+    }
+
     writeln!(
         file,
-        "{}    fn serialize(&self, {}buf: &mut impl Extend<u8>) {{",
-        indent,
+        "{indent}    }}\n\n{indent}    fn serialize(&self, {}buf: &mut impl Extend<u8>) {{",
         if def.category == Category::Types && def.params.is_empty() {
             "_"
         } else {
@@ -254,6 +276,39 @@ fn write_serializable<W: Write>(
     writeln!(file, "{indent}    }}")?;
     writeln!(file, "{indent}}}")?;
     Ok(())
+}
+
+fn write_serialized_len_param<W: Write>(
+    file: &mut W,
+    indent: &str,
+    param: &Parameter,
+    _metadata: &Metadata,
+    is_first: bool,
+) -> io::Result<()> {
+    let arg_name = rustifier::parameters::attr_name(param);
+
+    let args = match &param.ty {
+        ParameterType::Flags => format_args!("4 // {arg_name}"),
+        ParameterType::Normal { ty, flag } => {
+            if ty.name == "true" {
+                return Ok(());
+            }
+
+            if flag.is_some() {
+                format_args!(
+                    "if let Some(ref x) = self.{arg_name} {{ x.serialized_len() }} else {{ 0 }}"
+                )
+            } else {
+                format_args!("self.{arg_name}.serialized_len()")
+            }
+        }
+    };
+
+    writeln!(
+        file,
+        "{indent}        {}{args}",
+        if is_first { "" } else { "    + " }
+    )
 }
 
 /// Defines the `impl Deserializable` corresponding to the definition:

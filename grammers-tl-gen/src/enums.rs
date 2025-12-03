@@ -207,14 +207,36 @@ fn write_serializable<W: Write>(
         indent,
         rustifier::types::type_name(ty)
     )?;
+
+    let defs = metadata.defs_with_type(ty);
+
     writeln!(
         file,
-        "{indent}    fn serialize(&self, buf: &mut impl Extend<u8>) {{"
+        "{indent}    fn serialized_len(&self) -> usize {{\n{indent}        4 + match self {{"
+    )?;
+
+    for d in defs.iter() {
+        writeln!(
+            file,
+            "{}            Self::{}{},",
+            indent,
+            rustifier::definitions::variant_name(d),
+            if d.params.is_empty() {
+                " => 0"
+            } else {
+                "(x) => x.serialized_len()"
+            },
+        )?;
+    }
+
+    writeln!(
+        file,
+        "{indent}        }}\n{indent}    }}\n\n{indent}    fn serialize(&self, buf: &mut impl Extend<u8>) {{"
     )?;
 
     writeln!(file, "{indent}        use crate::Identifiable;")?;
     writeln!(file, "{indent}        match self {{")?;
-    for d in metadata.defs_with_type(ty) {
+    for d in defs.iter() {
         writeln!(
             file,
             "{}            Self::{}{} => {{",
